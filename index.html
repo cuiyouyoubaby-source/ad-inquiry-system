@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>广告流量询量与已占量查询系统 - PRD</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card h2 {
+            color: #1a1a2e;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #4a9eff;
+        }
+        .card h3 {
+            color: #333;
+            font-size: 1.2em;
+            margin: 20px 0 10px;
+        }
+        .card p, .card li { color: #555; margin-bottom: 10px; }
+        .card ul { margin-left: 20px; }
+        .card ul li { margin-bottom: 8px; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin: 4px;
+        }
+        .badge-primary { background: #e6f7ff; color: #1890ff; }
+        .badge-success { background: #f6ffed; color: #52c41a; }
+        .badge-warning { background: #fff7e6; color: #fa8c16; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .feature-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4a9eff;
+        }
+        .feature-item h4 { color: #1a1a2e; margin-bottom: 8px; }
+        .nav-menu {
+            background: #fff;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav-menu ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .nav-menu a {
+            color: #1a1a2e;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .nav-menu a:hover { background: #f0f0f0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        th { background: #fafafa; font-weight: 600; }
+        tr:hover { background: #f5f5f5; }
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            border-top: 1px solid #e8e8e8;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 广告流量询量与已占量查询系统</h1>
+        <p>Product Requirements Document (PRD)</p>
+    </div>
+
+    <nav class="nav-menu">
+        <ul>
+            <li><a href="#overview">项目概述</a></li>
+            <li><a href="#features">核心功能</a></li>
+            <li><a href="#pages">页面设计</a></li>
+            <li><a href="#modules">功能模块</a></li>
+            <li><a href="#data">数据流程</a></li>
+            <li><a href="#preview">原型预览</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- 项目概述 -->
+        <div id="overview" class="card">
+            <h2>📋 项目概述</h2>
+            <p><strong>项目名称：</strong>广告流量询量与已占量查询系统</p>
+            <p><strong>项目目标：</strong>为广告主、媒介和运营人员提供精准的流量询量和已占量查询能力，优化库存管理效率，提升广告投放决策质量。</p>
+            
+            <h3>目标用户</h3>
+            <div class="grid-2">
+                <div class="feature-item">
+                    <h4>👤 广告主</h4>
+                    <p>了解可用流量，制定投放计划</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📢 媒介人员</h4>
+                    <p>查询库存，安排广告投放</p>
+                </div>
+                <div class="feature-item">
+                    <h4>⚙️ 运营人员</h4>
+                    <p>监控已占量，优化资源配置</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📊 管理员</h4>
+                    <p>全局监控，系统配置管理</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心功能 -->
+        <div id="features" class="card">
+            <h2>🎯 核心功能</h2>
+            <div class="grid-2">
+                <div class="feature-item">
+                    <h4>📈 流量询量</h4>
+                    <p>支持按媒体、资源位、时间、地域等维度查询可用流量</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🔍 已占量查询</h4>
+                    <p>实时查看已预订/已投放的流量占用情况</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📊 库存看板</h4>
+                    <p>可视化展示库存水位，预警低库存资源</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📅 时段分析</h4>
+                    <p>支持分时段、分日期的流量趋势分析</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面设计 -->
+        <div id="pages" class="card">
+            <h2>🖥️ 页面设计</h2>
+            <h3>库存管理菜单结构</h3>
+            <table>
+                <thead>
+                    <tr><th>菜单</th><th>功能说明</th><th>权限</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>库存流量看板</strong></td><td>可视化展示各资源位库存水位</td><td>全员可见</td></tr>
+                    <tr><td><strong>询量计算器</strong></td><td>根据条件计算可用流量</td><td>媒介/管理员</td></tr>
+                    <tr><td><strong>询量参数配置</strong></td><td>配置询量计算参数</td><td>管理员</td></tr>
+                    <tr><td><strong>占量晴雨表</strong></td><td>展示已占量分布情况</td><td>全员可见</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 功能模块 -->
+        <div id="modules" class="card">
+            <h2>⚙️ 功能模块详解</h2>
+            
+            <h3>1. 询量计算器</h3>
+            <p>支持多维度条件组合查询：</p>
+            <ul>
+                <li><span class="badge badge-primary">媒体</span> 海信、小米等</li>
+                <li><span class="badge badge-primary">资源位</span> 开机广告、贴片广告、屏保广告、焦点视频</li>
+                <li><span class="badge badge-primary">时间</span> 有效投放天数、投放时段</li>
+                <li><span class="badge badge-primary">地域</span> 全国、省份、城市</li>
+                <li><span class="badge badge-primary">人群</span> 年龄、性别、设备尺寸</li>
+                <li><span class="badge badge-primary">频次</span> 投放周期最大频次、请求倍率</li>
+            </ul>
+
+            <h3>2. 人群包配置</h3>
+            <p>支持两种人群包配置方式（互斥）：</p>
+            <ul>
+                <li><strong>电视淘宝人群包ID</strong> - 直接输入人群包ID</li>
+                <li><strong>海信人群包规模</strong> - 输入设备UV数</li>
+            </ul>
+
+            <h3>3. 询量结果</h3>
+            <p>计算结果包含以下维度：</p>
+            <ul>
+                <li>预估曝光量</li>
+                <li>预估点击量</li>
+                <li>预估设备数</li>
+                <li>预估频次</li>
+            </ul>
+            <p>支持按地域维度展示，并导出Excel。</p>
+        </div>
+
+        <!-- 数据流程 -->
+        <div id="data" class="card">
+            <h2>🔄 数据流程</h2>
+            <div class="grid-2">
+                <div class="feature-item">
+                    <h4>1. 数据采集</h4>
+                    <p>从各媒体平台采集实时流量数据</p>
+                </div>
+                <div class="feature-item">
+                    <h4>2. 数据处理</h4>
+                    <p>清洗、聚合、计算可用流量</p>
+                </div>
+                <div class="feature-item">
+                    <h4>3. 询量计算</h4>
+                    <p>根据用户输入条件计算结果</p>
+                </div>
+                <div class="feature-item">
+                    <h4>4. 结果展示</h4>
+                    <p>可视化展示询量结果</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 原型预览 -->
+        <div id="preview" class="card">
+            <h2>👁️ 原型预览</h2>
+            <p>点击下方链接查看询量计算器原型：</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="inquiry_calculator/index.html" style="display: inline-block; padding: 15px 40px; background: #1a1a2e; color: #fff; text-decoration: none; border-radius: 8px; font-size: 1.1em;">
+                    🔗 打开询量计算器原型
+                </a>
+            </div>
+            <p style="text-align: center; color: #999;">包含：列表页、创建页、详情页</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>📄 广告流量询量与已占量查询系统 PRD</p>
+        <p>Version 1.0 | 2025</p>
+    </div>
+</body>
+</html>

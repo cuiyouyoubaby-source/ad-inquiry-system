@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>询量计算器 - 库存管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        /* 顶部导航 */
+        .header {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-left { display: flex; align-items: center; gap: 32px; }
+        .logo { font-size: 18px; font-weight: 600; }
+        .nav-menu { display: flex; gap: 24px; }
+        .nav-item {
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            padding: 8px 0;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .nav-item:hover, .nav-item.active { color: #fff; }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #4a9eff;
+            border-radius: 2px 2px 0 0;
+        }
+        .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        
+        /* 二级导航 */
+        .sub-nav {
+            background: #fff;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 0 24px;
+            display: flex;
+            gap: 32px;
+        }
+        .sub-nav-item {
+            padding: 14px 0;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .sub-nav-item:hover, .sub-nav-item.active { color: #1a1a2e; }
+        .sub-nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #1a1a2e;
+        }
+        
+        /* 主内容区 */
+        .main-content { padding: 24px; max-width: 1400px; margin: 0 auto; }
+        
+        /* 页面标题 */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .page-title { font-size: 20px; font-weight: 600; color: #1a1a2e; }
+        .page-actions { display: flex; gap: 12px; }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: 1px solid #d9d9d9;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn:hover { border-color: #4a9eff; color: #4a9eff; }
+        .btn-primary {
+            background: #1a1a2e;
+            color: #fff;
+            border-color: #1a1a2e;
+        }
+        .btn-primary:hover { background: #333; border-color: #333; color: #fff; }
+        .btn-success {
+            background: #52c41a;
+            color: #fff;
+            border-color: #52c41a;
+        }
+        .btn-success:hover { background: #73d13d; border-color: #73d13d; }
+        
+        /* 搜索筛选区域 */
+        .search-filter {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .search-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-row:last-child { margin-bottom: 0; }
+        .search-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-item label {
+            color: #666;
+            font-size: 13px;
+            white-space: nowrap;
+            min-width: 70px;
+        }
+        .search-item input, .search-item select {
+            padding: 6px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 13px;
+            width: 180px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-item input:focus, .search-item select:focus { border-color: #4a9eff; }
+        .search-item input::placeholder { color: #bfbfbf; }
+        
+        /* 表格样式 */
+        .table-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            background: #fafafa;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #f0f0f0;
+            white-space: nowrap;
+        }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+        tr:hover td { background: #fafafa; }
+        .empty-cell { color: #bfbfbf; }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        .tag-success { background: #f6ffed; color: #52c41a; }
+        .tag-warning { background: #fff7e6; color: #fa8c16; }
+        
+        /* 操作按钮 */
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn {
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: 1px solid #d9d9d9;
+            background: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            border-color: #4a9eff;
+            color: #4a9eff;
+        }
+        .action-btn-primary {
+            border-color: #1a1a2e;
+            color: #1a1a2e;
+        }
+        .action-btn-primary:hover {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 16px 24px;
+            gap: 8px;
+        }
+        .pagination-btn {
+            padding: 6px 12px;
+            border: 1px solid #d9d9d9;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #666;
+        }
+        .pagination-btn:hover:not(:disabled) { border-color: #4a9eff; color: #4a9eff; }
+        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination-btn.active {
+            background: #1a1a2e;
+            color: #fff;
+            border-color: #1a1a2e;
+        }
+        .pagination-info { color: #999; font-size: 13px; }
+        
+        /* 表单页面样式 */
+        .form-page {
+            background: #fff;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .form-section {
+            margin-bottom: 32px;
+        }
+        .form-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .form-row {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+        .form-item {
+            flex: 1;
+            min-width: 0;
+        }
+        .form-item.full-width { width: 100%; }
+        .form-item label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #333;
+        }
+        .form-item label .required { color: #ff4d4f; margin-right: 4px; }
+        .form-item .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .form-item input, .form-item select, .form-item textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: #4a9eff; }
+        .form-item input::placeholder, .form-item textarea::placeholder { color: #bfbfbf; }
+        .form-item select { cursor: pointer; appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 12px center; padding-right: 32px; }
+        .form-item textarea { resize: vertical; min-height: 80px; }
+        
+        /* 互斥提示 */
+        .mutex-group {
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+        .mutex-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+        }
+        
+        /* 时间选择器 */
+        .time-range {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .time-range input {
+            width: 100px;
+            text-align: center;
+        }
+        .time-range .add-btn {
+            padding: 6px 12px;
+            border: 1px dashed #d9d9d9;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #666;
+            font-size: 13px;
+        }
+        .time-range .add-btn:hover { border-color: #4a9eff; color: #4a9eff; }
+        
+        /* 结果展示 */
+        .result-section {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 8px;
+            padding: 24px;
+            margin-top: 32px;
+        }
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #52c41a;
+            margin-bottom: 16px;
+        }
+        
+        /* Tab切换 */
+        .tabs { display: flex; border-bottom: 1px solid #e8e8e8; margin-bottom: 24px; }
+        .tab-item {
+            padding: 12px 24px;
+            cursor: pointer;
+            color: #666;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .tab-item:hover, .tab-item.active { color: #1a1a2e; }
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #1a1a2e;
+        }
+        
+        /* 详情页只读 */
+        .readonly-value {
+            padding: 10px 12px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            color: #666;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* 面包屑 */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #999;
+        }
+        .breadcrumb a { color: #4a9eff; cursor: pointer; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        
+        /* 隐藏 */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">智屏视界</div>
+            <div class="nav-menu">
+                <div class="nav-item">首页</div>
+                <div class="nav-item">广告管理</div>
+                <div class="nav-item">数据报表</div>
+                <div class="nav-item active">库存管理</div>
+                <div class="nav-item">系统设置</div>
+            </div>
+        </div>
+        <div class="user-info">
+            <span>👤 崔帆</span>
+            <span>▼</span>
+        </div>
+    </div>
+    
+    <!-- 二级导航 -->
+    <div class="sub-nav">
+        <div class="sub-nav-item">库存流量看板</div>
+        <div class="sub-nav-item active">询量计算器</div>
+        <div class="sub-nav-item">询量参数配置</div>
+        <div class="sub-nav-item">占量晴雨表</div>
+    </div>
+    
+    <!-- 主内容区 -->
+    <div class="main-content">
+        
+        <!-- ===== 页面1：询量计算器列表 ===== -->
+        <div id="page-list" class="page-section">
+            <div class="page-header">
+                <h1 class="page-title">询量计算器</h1>
+                <div class="page-actions">
+                    <button class="btn btn-primary" onclick="goToCreate()">+ 新建询量</button>
+                </div>
+            </div>
+            
+            <!-- 搜索筛选 -->
+            <div class="search-filter">
+                <div class="search-row">
+                    <div class="search-item">
+                        <label>创建人</label>
+                        <input type="text" placeholder="请输入创建人" id="search-creator">
+                    </div>
+                    <div class="search-item">
+                        <label>广告主ID</label>
+                        <input type="text" placeholder="请输入广告主ID" id="search-advertiser-id">
+                    </div>
+                    <div class="search-item">
+                        <label>广告名称</label>
+                        <input type="text" placeholder="请输入广告名称" id="search-ad-name">
+                    </div>
+                    <div class="search-item">
+                        <label>询量名称</label>
+                        <input type="text" placeholder="请输入询量名称" id="search-inquiry-name">
+                    </div>
+                    <div class="search-item">
+                        <label>询量ID</label>
+                        <input type="text" placeholder="请输入询量ID" id="search-inquiry-id">
+                    </div>
+                </div>
+                <div class="search-row">
+                    <div class="search-item">
+                        <label>资源位</label>
+                        <select id="search-resource">
+                            <option value="">全部资源位</option>
+                            <option value="1">开机广告（ID: 1001）</option>
+                            <option value="2">贴片广告（ID: 1002）</option>
+                            <option value="3">屏保广告（ID: 1003）</option>
+                            <option value="4">焦点视频（ID: 1004）</option>
+                        </select>
+                    </div>
+                    <div class="search-item">
+                        <button class="btn btn-primary" onclick="doSearch()">查询</button>
+                        <button class="btn" onclick="resetSearch()">重置</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 列表 -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>询量ID</th>
+                            <th>询量名称</th>
+                            <th>媒体</th>
+                            <th>广告主ID</th>
+                            <th>广告名称</th>
+                            <th>品牌ID</th>
+                            <th>品牌名称</th>
+                            <th>资源位ID</th>
+                            <th>资源位名称</th>
+                            <th>有效投放天数</th>
+                            <th>创建人</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-body">
+                        <!-- 数据行 -->
+                    </tbody>
+                </table>
+                
+                <!-- 分页 -->
+                <div class="pagination">
+                    <span class="pagination-info">共 156 条记录</span>
+                    <button class="pagination-btn" disabled>上一页</button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">3</button>
+                    <button class="pagination-btn">4</button>
+                    <button class="pagination-btn">5</button>
+                    <button class="pagination-btn">下一页</button>
+                    <span class="pagination-info">跳至 <input type="text" style="width:40px;text-align:center;padding:4px;border:1px solid #d9d9d9;border-radius:4px;"> 页</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 页面2：询量页面（创建/查看） ===== -->
+        <div id="page-form" class="page-section hidden">
+            <div class="breadcrumb">
+                <a onclick="goToList()">询量计算器</a>
+                <span>></span>
+                <span id="form-breadcrumb-text">新建询量</span>
+            </div>
+            
+            <div class="page-header">
+                <h1 class="page-title" id="form-title">新建询量</h1>
+                <div class="page-actions">
+                    <button class="btn" onclick="goToList()">取消</button>
+                    <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">提交询量</button>
+                </div>
+            </div>
+            
+            <div class="form-page">
+                <!-- 询量条件输入 -->
+                <div class="form-section">
+                    <div class="form-section-title">询量条件</div>
+                    
+                    <div class="form-row">
+                        <div class="form-item" style="flex: 2;">
+                            <label><span class="required">*</span>询量名称</label>
+                            <input type="text" placeholder="请输入询量名称，最多120个字符" maxlength="120" id="inquiry-name">
+                        </div>
+                        <div class="form-item">
+                            <label>广告主</label>
+                            <select id="advertiser">
+                                <option value="">请选择（非必填）</option>
+                                <option value="1">宝洁</option>
+                                <option value="2">欧莱雅</option>
+                                <option value="3">汤臣倍健</option>
+                                <option value="4">珀莱雅</option>
+                            </select>
+                        </div>
+                        <div class="form-item">
+                            <label>品牌</label>
+                            <select id="brand" disabled>
+                                <option value="">请先选择广告主</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label><span class="required">*</span>媒体</label>
+                            <select id="media">
+                                <option value="hisense" selected>海信</option>
+                            </select>
+                        </div>
+                        <div class="form-item">
+                            <label><span class="required">*</span>资源位</label>
+                            <select id="resource">
+                                <option value="">请选择资源位</option>
+                                <option value="1001">开机广告（1001）</option>
+                                <option value="1002">贴片广告（1002）</option>
+                                <option value="1003">屏保广告（1003）</option>
+                                <option value="1004">焦点视频（1004）</option>
+                            </select>
+                        </div>
+                        <div class="form-item">
+                            <label><span class="required">*</span>有效投放天数</label>
+                            <input type="number" placeholder="请输入天数，1-366" min="1" max="366" id="days">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label>投放周期最大频次</label>
+                            <input type="text" placeholder="支持小数点后一位，如7.5" id="frequency">
+                            <div class="hint">单位：次</div>
+                        </div>
+                        <div class="form-item">
+                            <label>请求倍率</label>
+                            <input type="text" placeholder="支持小数点后两位，如1.45" id="bid-rate">
+                            <div class="hint">如果使用程序化（三方DSP投放），请填入请求倍率</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 定向地域 -->
+                    <div class="form-row">
+                        <div class="form-item full-width">
+                            <label>定向地域</label>
+                            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                <button class="btn" style="font-size: 12px; padding: 4px 12px;">📥 下载模版</button>
+                                <button class="btn" style="font-size: 12px; padding: 4px 12px;">📤 批量上传</button>
+                                <span class="hint" style="margin-left: 8px; line-height: 28px;">不填写按全国处理</span>
+                            </div>
+                            <textarea placeholder="支持省和城市级联选择，或使用批量填入框粘贴，多个地域用“/”分隔" id="regions"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- 人群包配置（互斥组1） -->
+                    <div class="mutex-group">
+                        <div class="mutex-title">人群包配置（二选一）</div>
+                        <div class="form-row">
+                            <div class="form-item">
+                                <label>电视淘宝人群包ID</label>
+                                <input type="text" placeholder="请输入电视淘宝人群包ID" id="tb-package">
+                                <div class="hint">本次只支持输入一个ID</div>
+                            </div>
+                            <div class="form-item">
+                                <label>海信人群包规模</label>
+                                <input type="number" placeholder="请输入人群包的设备数，单位：个" id="hisense-package">
+                                <div class="hint">因系统未打通，请直接输入海信人群包的设备UV数</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 排除人群包（互斥组2） -->
+                    <div class="mutex-group">
+                        <div class="mutex-title">排除人群包（二选一）</div>
+                        <div class="form-row">
+                            <div class="form-item">
+                                <label>排除电视淘宝人群包ID</label>
+                                <input type="text" placeholder="请输入排除的电视淘宝人群包ID" id="exclude-tb">
+                                <div class="hint">即本次一定不能投放的设备包，如排除历史已投</div>
+                            </div>
+                            <div class="form-item">
+                                <label>排除海信人群包规模</label>
+                                <input type="number" placeholder="请输入排除的人群包设备数，单位：个" id="exclude-hisense">
+                                <div class="hint">该输入如果在海信，因系统未打通，请直接输入设备UV数</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label>定向年龄</label>
+                            <select id="age" multiple size="4">
+                                <option value="">18-24岁（占比 15.2%）</option>
+                                <option value="">25-34岁（占比 28.6%）</option>
+                                <option value="">35-44岁（占比 22.1%）</option>
+                                <option value="">45-54岁（占比 18.3%）</option>
+                                <option value="">55岁以上（占比 15.8%）</option>
+                            </select>
+                            <div class="hint">当客户考核秒针TA，有明确年龄要求时使用</div>
+                        </div>
+                        <div class="form-item">
+                            <label>定向性别</label>
+                            <select id="gender">
+                                <option value="">请选择</option>
+                                <option value="">男（占比 52.3%）</option>
+                                <option value="">女（占比 47.7%）</option>
+                            </select>
+                            <div class="hint">当客户考核秒针TA，有明确性别要求时使用</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label>设备尺寸</label>
+                            <select id="device-size" multiple size="4">
+                                <option value="">32英寸以下</option>
+                                <option value="">32-43英寸</option>
+                                <option value="">43-55英寸</option>
+                                <option value="">55-65英寸</option>
+                                <option value="">65英寸以上</option>
+                            </select>
+                        </div>
+                        <div class="form-item">
+                            <label>投放时段</label>
+                            <div class="time-range">
+                                <input type="text" placeholder="06:00" value="06:00">
+                                <span>至</span>
+                                <input type="text" placeholder="22:00" value="22:00">
+                                <button class="add-btn">+ 添加时段</button>
+                            </div>
+                            <div class="hint">如果客户要求分时段投放，请输入具体时段，精确到半点</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 询量结果（创建时隐藏，查看时显示） -->
+                <div id="result-section" class="result-section hidden">
+                    <div class="result-title">📊 询量结果</div>
+                    <table style="width: 100%; background: #fff; border-radius: 6px; overflow: hidden;">
+                        <thead>
+                            <tr style="background: #f0f0f0;">
+                                <th style="padding: 10px 16px; text-align: left;">地域</th>
+                                <th style="padding: 10px 16px; text-align: right;">预估曝光量</th>
+                                <th style="padding: 10px 16px; text-align: right;">预估点击量</th>
+                                <th style="padding: 10px 16px; text-align: right;">预估设备数</th>
+                                <th style="padding: 10px 16px; text-align: right;">预估频次</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 10px 16px;">全国</td>
+                                <td style="padding: 10px 16px; text-align: right;">2,580,000</td>
+                                <td style="padding: 10px 16px; text-align: right;">51,600</td>
+                                <td style="padding: 10px 16px; text-align: right;">860,000</td>
+                                <td style="padding: 10px 16px; text-align: right;">3.0</td>
+                            </tr>
+                            <tr style="background: #fafafa;">
+                                <td style="padding: 10px 16px;">北京</td>
+                                <td style="padding: 10px 16px; text-align: right;">320,000</td>
+                                <td style="padding: 10px 16px; text-align: right;">6,400</td>
+                                <td style="padding: 10px 16px; text-align: right;">106,667</td>
+                                <td style="padding: 10px 16px; text-align: right;">3.0</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px 16px;">上海</td>
+                                <td style="padding: 10px 16px; text-align: right;">280,000</td>
+                                <td style="padding: 10px 16px; text-align: right;">5,600</td>
+                                <td style="padding: 10px 16px; text-align: right;">93,333</td>
+                                <td style="padding: 10px 16px; text-align: right;">3.0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 16px; text-align: right;">
+                        <button class="btn">📥 下载Excel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <script>
+        // 模拟数据
+        const mockData = [
+            { id: 'INQ202505250001', name: '宝洁618开机广告询量', media: '海信', advertiserId: 'ADV001', adName: '宝洁618开机广告', brandId: 'BRD001', brandName: '宝洁', resourceId: '1001', resourceName: '开机广告', days: 30, creator: '崔帆', createTime: '2025-05-25 09:30:25' },
+            { id: 'INQ202505250002', name: '欧莱雅贴片广告询量', media: '海信', advertiserId: 'ADV002', adName: '欧莱雅贴片广告', brandId: 'BRD002', brandName: '欧莱雅', resourceId: '1002', resourceName: '贴片广告', days: 15, creator: '崔帆', createTime: '2025-05-25 14:22:18' },
+            { id: 'INQ202505260003', name: '汤臣倍健焦点视频询量', media: '海信', advertiserId: 'ADV003', adName: '汤臣倍健焦点视频', brandId: '-', brandName: '-', resourceId: '1004', resourceName: '焦点视频', days: 45, creator: '张三', createTime: '2025-05-26 10:15:33' },
+            { id: 'INQ202505260004', name: '珀莱雅屏保广告询量', media: '海信', advertiserId: '-', adName: '-', brandId: '-', brandName: '-', resourceId: '1003', resourceName: '屏保广告', days: 20, creator: '李四', createTime: '2025-05-26 16:45:09' },
+            { id: 'INQ202505270005', name: '金领冠开机广告询量', media: '海信', advertiserId: 'ADV005', adName: '金领冠开机广告', brandId: 'BRD005', brandName: '金领冠', resourceId: '1001', resourceName: '开机广告', days: 60, creator: '崔帆', createTime: '2025-05-27 08:55:42' },
+            { id: 'INQ202505270006', name: '三得利贴片广告询量', media: '海信', advertiserId: 'ADV006', adName: '三得利贴片广告', brandId: 'BRD006', brandName: '三得利', resourceId: '1002', resourceName: '贴片广告', days: 25, creator: '王五', createTime: '2025-05-27 11:30:17' },
+            { id: 'INQ202505280007', name: '罗莱家纺开机广告询量', media: '海信', advertiserId: 'ADV007', adName: '罗莱家纺开机广告', brandId: 'BRD007', brandName: '罗莱', resourceId: '1001', resourceName: '开机广告', days: 35, creator: '崔帆', createTime: '2025-05-28 09:12:56' },
+            { id: 'INQ202505280008', name: '不凡帝屏保广告询量', media: '海信', advertiserId: '-', adName: '-', brandId: '-', brandName: '-', resourceId: '1003', resourceName: '屏保广告', days: 18, creator: '赵六', createTime: '2025-05-28 15:20:38' },
+        ];
+        
+        // 渲染列表
+        function renderList(data) {
+            const tbody = document.getElementById('list-body');
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td><span class="tag">${item.id}</span></td>
+                    <td>${item.name}</td>
+                    <td>${item.media}</td>
+                    <td>${item.advertiserId !== '-' ? item.advertiserId : '<span class="empty-cell">-</span>'}</td>
+                    <td>${item.adName !== '-' ? item.adName : '<span class="empty-cell">-</span>'}</td>
+                    <td>${item.brandId !== '-' ? item.brandId : '<span class="empty-cell">-</span>'}</td>
+                    <td>${item.brandName !== '-' ? item.brandName : '<span class="empty-cell">-</span>'}</td>
+                    <td>${item.resourceId}</td>
+                    <td>${item.resourceName}</td>
+                    <td>${item.days}天</td>
+                    <td>${item.creator}</td>
+                    <td>${item.createTime}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn action-btn-primary" onclick="viewDetail('${item.id}')">查看详情</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // 页面切换
+        function showPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden'));
+            document.getElementById(pageId).classList.remove('hidden');
+        }
+        
+        // 前往列表页
+        function goToList() {
+            showPage('page-list');
+            document.getElementById('form-title').textContent = '新建询量';
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('result-section').classList.add('hidden');
+            resetForm();
+        }
+        
+        // 前往创建页
+        function goToCreate() {
+            showPage('page-form');
+            document.getElementById('form-title').textContent = '新建询量';
+            document.getElementById('form-breadcrumb-text').textContent = '新建询量';
+            document.getElementById('submit-btn').textContent = '提交询量';
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('result-section').classList.add('hidden');
+            setFormEditable(true);
+        }
+        
+        // 查看详情
+        function viewDetail(id) {
+            showPage('page-form');
+            document.getElementById('form-title').textContent = '询量详情';
+            document.getElementById('form-breadcrumb-text').textContent = '询量详情';
+            document.getElementById('submit-btn').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            setFormEditable(false);
+            
+            // 填充模拟数据
+            const item = mockData.find(d => d.id === id);
+            if (item) {
+                document.getElementById('inquiry-name').value = item.name;
+                document.getElementById('days').value = item.days;
+            }
+        }
+        
+        // 设置表单可编辑状态
+        function setFormEditable(editable) {
+            const inputs = document.querySelectorAll('#page-form input, #page-form select, #page-form textarea');
+            inputs.forEach(input => {
+                input.disabled = !editable;
+            });
+        }
+        
+        // 重置表单
+        function resetForm() {
+            document.querySelectorAll('#page-form input, #page-form select, #page-form textarea').forEach(el => {
+                el.value = '';
+                el.disabled = false;
+            });
+        }
+        
+        // 提交表单
+        function submitForm() {
+            alert('询量提交成功！');
+            goToList();
+        }
+        
+        // 搜索
+        function doSearch() {
+            const creator = document.getElementById('search-creator').value.toLowerCase();
+            const filtered = mockData.filter(item => {
+                return !creator || item.creator.toLowerCase().includes(creator);
+            });
+            renderList(filtered);
+        }
+        
+        // 重置搜索
+        function resetSearch() {
+            document.querySelectorAll('.search-filter input, .search-filter select').forEach(el => el.value = '');
+            renderList(mockData);
+        }
+        
+        // 初始化
+        renderList(mockData);
+    </script>
+</body>
+</html>
