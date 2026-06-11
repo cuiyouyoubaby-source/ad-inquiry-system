@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+const fs = require('fs');
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -17,20 +18,34 @@ async function initDatabase() {
     await connection.execute('CREATE DATABASE IF NOT EXISTS ad_inquiry CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     await connection.execute('USE ad_inquiry');
 
-    // 1. 创建城市表
+    // 1. 创建省份表
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS provinces (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        province_code VARCHAR(10) NOT NULL COMMENT '省份编码',
+        province_name VARCHAR(50) NOT NULL COMMENT '省份名称',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_province_code (province_code)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='省份信息表'
+    `);
+    console.log('✅ 省份表创建完成');
+
+    // 2. 创建城市表
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS cities (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        province VARCHAR(50) NOT NULL COMMENT '省份',
-        city VARCHAR(50) NOT NULL COMMENT '城市',
-        tier VARCHAR(20) NOT NULL COMMENT '城市分级（一线/新一线/二线/三线/其他）',
+        city_code VARCHAR(10) NOT NULL COMMENT '城市编码',
+        city_name VARCHAR(50) NOT NULL COMMENT '城市名称',
+        province_code VARCHAR(10) NOT NULL COMMENT '省份编码',
+        tier VARCHAR(20) COMMENT '城市分级',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uk_city (city)
+        UNIQUE KEY uk_city_code (city_code),
+        KEY idx_province (province_code)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='城市信息表'
     `);
     console.log('✅ 城市表创建完成');
 
-    // 2. 创建资源位表
+    // 3. 创建资源位表
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS ad_slots (
         slot_id VARCHAR(50) PRIMARY KEY COMMENT '资源位ID',
@@ -42,7 +57,7 @@ async function initDatabase() {
     `);
     console.log('✅ 资源位表创建完成');
 
-    // 3. 创建业务因子表
+    // 4. 创建业务因子表
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS business_factors (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -55,7 +70,7 @@ async function initDatabase() {
     `);
     console.log('✅ 业务因子表创建完成');
 
-    // 4. 创建系数表
+    // 5. 创建系数表
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS coefficients (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -68,21 +83,21 @@ async function initDatabase() {
     `);
     console.log('✅ 系数表创建完成');
 
-    // 5. 创建基础数据表
+    // 6. 创建基础数据表
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS base_data (
         id INT AUTO_INCREMENT PRIMARY KEY,
         slot_id VARCHAR(50) NOT NULL COMMENT '资源位ID',
-        city VARCHAR(50) NOT NULL COMMENT '城市',
+        city_code VARCHAR(10) NOT NULL COMMENT '城市编码',
         device_count INT NOT NULL COMMENT '设备数',
         screen_size DECIMAL(10,4) NOT NULL COMMENT '屏幕尺寸',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uk_slot_city (slot_id, city)
+        UNIQUE KEY uk_slot_city (slot_id, city_code)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='基础数据表'
     `);
     console.log('✅ 基础数据表创建完成');
 
-    // 6. 创建询量记录表
+    // 7. 创建询量记录表
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS inquiry_records (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -118,47 +133,72 @@ async function initDatabase() {
 async function insertSampleData(connection) {
   console.log('📝 插入示例数据...');
 
-  // 插入城市数据
-  const cities = [
-    // 一线城市
-    { province: '北京', city: '北京', tier: '一线' },
-    { province: '上海', city: '上海', tier: '一线' },
-    { province: '广东', city: '广州', tier: '一线' },
-    { province: '广东', city: '深圳', tier: '一线' },
-    // 新一线城市
-    { province: '四川', city: '成都', tier: '新一线' },
-    { province: '浙江', city: '杭州', tier: '新一线' },
-    { province: '重庆', city: '重庆', tier: '新一线' },
-    { province: '陕西', city: '西安', tier: '新一线' },
-    { province: '江苏', city: '苏州', tier: '新一线' },
-    { province: '湖北', city: '武汉', tier: '新一线' },
-    { province: '江苏', city: '南京', tier: '新一线' },
-    { province: '天津', city: '天津', tier: '新一线' },
-    // 二线城市
-    { province: '广东', city: '佛山', tier: '二线' },
-    { province: '湖南', city: '长沙', tier: '二线' },
-    { province: '河南', city: '郑州', tier: '二线' },
-    { province: '云南', city: '昆明', tier: '二线' },
-    { province: '山东', city: '青岛', tier: '二线' },
-    { province: '辽宁', city: '沈阳', tier: '二线' },
-    { province: '山东', city: '济南', tier: '二线' },
-    { province: '福建', city: '厦门', tier: '二线' },
-    { province: '黑龙江', city: '哈尔滨', tier: '二线' },
-    // 三线城市
-    { province: '广西', city: '南宁', tier: '三线' },
-    { province: '河北', city: '石家庄', tier: '三线' },
-    { province: '山西', city: '太原', tier: '三线' },
-    { province: '贵州', city: '贵阳', tier: '三线' },
-    { province: '吉林', city: '长春', tier: '三线' },
-    { province: '江西', city: '南昌', tier: '三线' },
-    { province: '甘肃', city: '兰州', tier: '三线' }
-  ];
+  // 读取邮政编码数据
+  const data = fs.readFileSync('/Users/cuifan/.qwenpaw/workspaces/default/media/c3d09c11a0699e5d904ba554.text', 'utf8');
+  
+  const provinces = {};
+  const cities = {};
+  
+  // 解析每一行
+  const lines = data.split('\n').filter(line => line.trim());
+  
+  for (const line of lines) {
+    const parts = line.split('=');
+    if (parts.length !== 2) continue;
+    
+    const code = parts[0].trim();
+    const name = parts[1].trim();
+    
+    if (!code || !name) continue;
+    
+    // 判断级别
+    if (code.endsWith('0000')) {
+      // 省级：后4位是0000
+      provinces[code] = name;
+    } else if (code.endsWith('00')) {
+      // 市级：后2位是00，但不是省级
+      const provinceCode = code.substring(0, 2) + '0000';
+      if (!cities[provinceCode]) {
+        cities[provinceCode] = [];
+      }
+      cities[provinceCode].push({
+        code: code,
+        name: name
+      });
+    }
+  }
 
-  for (const city of cities) {
+  // 插入省份数据
+  for (const [code, name] of Object.entries(provinces)) {
     await connection.execute(
-      'INSERT IGNORE INTO cities (province, city, tier) VALUES (?, ?, ?)',
-      [city.province, city.city, city.tier]
+      'INSERT IGNORE INTO provinces (province_code, province_name) VALUES (?, ?)',
+      [code, name]
     );
+  }
+  console.log('✅ 省份数据插入完成');
+
+  // 插入城市数据
+  const cityTierMap = {
+    '北京市': '一线', '上海市': '一线', '广州市': '一线', '深圳市': '一线',
+    '成都市': '新一线', '杭州市': '新一线', '重庆市': '新一线', '西安市': '新一线',
+    '苏州市': '新一线', '武汉市': '新一线', '南京市': '新一线', '天津市': '新一线',
+    '长沙市': '二线', '郑州市': '二线', '宁波市': '二线', '佛山市': '二线',
+    '合肥市': '二线', '青岛市': '二线', '东莞市': '二线', '济南市': '二线',
+    '福州市': '二线', '昆明市': '二线', '大连市': '二线', '厦门市': '二线',
+    '哈尔滨市': '二线', '长春市': '二线', '沈阳市': '二线', '石家庄市': '二线',
+    '南昌市': '三线', '贵阳市': '三线', '南宁市': '三线', '兰州市': '三线',
+    '无锡市': '三线', '常州市': '三线', '南通市': '三线', '徐州市': '三线',
+    '烟台市': '三线', '唐山市': '三线', '温州市': '三线', '绍兴市': '三线'
+  };
+
+  for (const [provinceCode, cityList] of Object.entries(cities)) {
+    for (const city of cityList) {
+      const tier = cityTierMap[city.name] || '其他';
+      await connection.execute(
+        'INSERT IGNORE INTO cities (city_code, city_name, province_code, tier) VALUES (?, ?, ?, ?)',
+        [city.code, city.name, provinceCode, tier]
+      );
+    }
   }
   console.log('✅ 城市数据插入完成');
 
@@ -215,22 +255,22 @@ async function insertSampleData(connection) {
 
   // 插入基础数据（示例）
   const baseData = [
-    { slot_id: 'banana_splash', city: '北京', device_count: 1000000, screen_size: 6.5 },
-    { slot_id: 'banana_splash', city: '上海', device_count: 900000, screen_size: 6.5 },
-    { slot_id: 'banana_splash', city: '广州', device_count: 800000, screen_size: 6.5 },
-    { slot_id: 'banana_splash', city: '深圳', device_count: 850000, screen_size: 6.5 },
-    { slot_id: 'banana_splash', city: '成都', device_count: 600000, screen_size: 6.5 },
-    { slot_id: 'banana_splash', city: '杭州', device_count: 550000, screen_size: 6.5 },
-    { slot_id: 'banana_feed', city: '北京', device_count: 1000000, screen_size: 6.5 },
-    { slot_id: 'banana_feed', city: '上海', device_count: 900000, screen_size: 6.5 },
-    { slot_id: 'banana_feed', city: '广州', device_count: 800000, screen_size: 6.5 },
-    { slot_id: 'banana_feed', city: '深圳', device_count: 850000, screen_size: 6.5 }
+    { slot_id: 'banana_splash', city_code: '110000', device_count: 1000000, screen_size: 6.5 },
+    { slot_id: 'banana_splash', city_code: '310000', device_count: 900000, screen_size: 6.5 },
+    { slot_id: 'banana_splash', city_code: '440100', device_count: 800000, screen_size: 6.5 },
+    { slot_id: 'banana_splash', city_code: '440300', device_count: 850000, screen_size: 6.5 },
+    { slot_id: 'banana_splash', city_code: '510100', device_count: 600000, screen_size: 6.5 },
+    { slot_id: 'banana_splash', city_code: '330100', device_count: 550000, screen_size: 6.5 },
+    { slot_id: 'banana_feed', city_code: '110000', device_count: 1000000, screen_size: 6.5 },
+    { slot_id: 'banana_feed', city_code: '310000', device_count: 900000, screen_size: 6.5 },
+    { slot_id: 'banana_feed', city_code: '440100', device_count: 800000, screen_size: 6.5 },
+    { slot_id: 'banana_feed', city_code: '440300', device_count: 850000, screen_size: 6.5 }
   ];
 
   for (const data of baseData) {
     await connection.execute(
-      'INSERT IGNORE INTO base_data (slot_id, city, device_count, screen_size) VALUES (?, ?, ?, ?)',
-      [data.slot_id, data.city, data.device_count, data.screen_size]
+      'INSERT IGNORE INTO base_data (slot_id, city_code, device_count, screen_size) VALUES (?, ?, ?, ?)',
+      [data.slot_id, data.city_code, data.device_count, data.screen_size]
     );
   }
   console.log('✅ 基础数据插入完成');

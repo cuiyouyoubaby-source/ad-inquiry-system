@@ -730,6 +730,47 @@
             } catch (error) {
                 console.error('加载资源位失败:', error);
             }
+            
+            // 加载省份
+            loadProvinces();
+        }
+        
+        // 加载省份数据
+        async function loadProvinces() {
+            try {
+                const response = await fetch('/api/provinces');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const provinceList = document.getElementById('provinceList');
+                    provinceList.innerHTML = result.data.map(province => 
+                        `<div class="city-item" data-code="${province.province_code}" onclick="toggleProvince(this)">${province.province_name}</div>`
+                    ).join('');
+                }
+            } catch (error) {
+                console.error('加载省份失败:', error);
+            }
+        }
+        
+        // 切换省份选择
+        function toggleProvince(element) {
+            element.classList.toggle('selected');
+            const provinceCode = element.dataset.code;
+            loadCities(provinceCode);
+        }
+        
+        // 加载城市数据
+        async function loadCities(provinceCode) {
+            try {
+                const response = await fetch(`/api/cities/${provinceCode}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('城市数据:', result.data);
+                }
+            } catch (error) {
+                console.error('加载城市失败:', error);
+            }
         }
         
         // 配置标签页切换

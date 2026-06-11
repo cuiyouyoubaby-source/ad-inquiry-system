@@ -45,20 +45,20 @@ async function testDBConnection() {
 // 获取所有省份
 app.get('/api/provinces', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT DISTINCT province FROM cities ORDER BY province');
-    res.json({ success: true, data: rows.map(row => row.province) });
+    const [rows] = await pool.execute('SELECT province_code, province_name FROM provinces ORDER BY province_code');
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
 // 获取省份下的城市
-app.get('/api/cities/:province', async (req, res) => {
+app.get('/api/cities/:provinceCode', async (req, res) => {
   try {
-    const { province } = req.params;
+    const { provinceCode } = req.params;
     const [rows] = await pool.execute(
-      'SELECT city, tier FROM cities WHERE province = ? ORDER BY city',
-      [province]
+      'SELECT city_code, city_name, tier FROM cities WHERE province_code = ? ORDER BY city_code',
+      [provinceCode]
     );
     res.json({ success: true, data: rows });
   } catch (error) {
@@ -71,7 +71,7 @@ app.get('/api/cities-by-tier/:tier', async (req, res) => {
   try {
     const { tier } = req.params;
     const [rows] = await pool.execute(
-      'SELECT city, province FROM cities WHERE tier = ? ORDER BY city',
+      'SELECT city_code, city_name, province_code FROM cities WHERE tier = ? ORDER BY city_code',
       [tier]
     );
     res.json({ success: true, data: rows });
